@@ -39,8 +39,6 @@ if __name__ == "__main__":
     while True:
         recv_raw = ws.recv()
         if recv_raw != '':
-##            print(recv_raw.encode("utf-8"))
-##            print("--------------------------------------------------------------------------------------------------------------------------------------------")
             receive = json.loads(recv_raw)
             heartbeatThread.last_seq = receive['s']  # Update hearbeat sequence number
             
@@ -60,9 +58,6 @@ if __name__ == "__main__":
                 elif contentSplit[-1] == "amirite?" and len(contentSplit) > 1:
                     if contentSplit[-2][-1] == ',':
                         contentSplit[-2] = contentSplit[-2][:-1]  # Strip the comma.
-##                    if receive['d']['author']['id'] == "137685926078840832" and ("Fuck" in contentSplit or "fuck" in contentSplit):
-##                        print(sendMessage("Yeah, muck fike!", channelID))
-##                    else:
                     print(sendMessage("Yeah, {}!".format(" ".join(contentSplit[:-1])), channelID))
 
                 # Karmabot. Activates if first word contains ++ or --
@@ -97,33 +92,3 @@ if __name__ == "__main__":
                                 emoji = emojitable.table[char]
                             print(addReaction(emoji, channelID, prevMessageID))
                             time.sleep(0.07)
-                        
-                    
-                    
-                    
-
-
-
-
-
-                # Wrong!bot
-##                elif receive['d']['author']['id'] != "174655468273270786":  # The bot's ID.
-##                    if random.random() < 0.1:
-##                        print(sendMessage("WRONG!", channelID))
-                        
-                
-               # # # Shit x says 
-               # # if len(contentSplit) > 2 and contentSplit[0].lower() == "shit" and contentSplit[2].lower() == "says":
-               # #     username = contentSplit[1]
-               # #     messageList = getMessageJson(channelID)
-               # #     if messageList == "ERROR":
-               # #         sendMessage("PLEASE STOP SENDING SHIT YOU'RE GOING TO MAKE ME LOSE MY DEVKEY", channelID)
-               # #     messageString = parseMessageJson(messageList, username)
-               # #     if not messageString:
-               # #         sendMessage(username + " has never said anything ever!", channelID)
-               # #         continue
-               # #     s = markov.split_string(messageString)
-               # #     m = markov.markov_chain(s)
-               # #     mg = markov.markov_generate(m)
-               # #     sendMessage(username + ": " + mg, channelID)
-
