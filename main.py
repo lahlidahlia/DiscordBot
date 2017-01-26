@@ -91,4 +91,4 @@ if __name__ == "__main__":
                             else:
                                 emoji = emojitable.table[char]
                             print(addReaction(emoji, channelID, prevMessageID))
-                            time.sleep(0.07)
+                            time.sleep(0.3)

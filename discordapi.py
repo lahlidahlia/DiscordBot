@@ -11,7 +11,7 @@ class Heartbeat(threading.Thread):
     Make sure to update last_seq every time a new sequence number comes along
     """
     def __init__(self, ws, interval):
-        super().__init__()
+        super(Heartbeat, self).__init__()
         self.interval = interval
         self.last_seq = 3
         self.ws = ws
