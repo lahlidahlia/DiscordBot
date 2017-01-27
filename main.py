@@ -1,7 +1,7 @@
 import requests
 import json
-from websocket import create_connection
 from globvar import *
+import websocket
 from discordapi import *
 import random
 import karmabot
@@ -10,85 +10,101 @@ import time
 
 """ Before you begin, create a file named 'token.cfg' and put your bot token in it. Just the bot token."""
 
-if __name__ == "__main__":
-    karma = karmabot.Karma("karma.json")
-    
-    # Handshake
-    gateWay = "wss://gateway.discord.gg/"
+
+def on_open(ws):
     handshakePayload = json.dumps({
         'op': 2,
         'd': {
         'token': token,
-        'properties': {},
+        'properties': {
+	    '$os': 'linux',
+	    '$browser': '',
+	    '$device': '',
+	    '$referrer': '',
+	    '$referring_domain': ''
+        },
         'compress': False,
-        'large_threshold': 250
+        'large_threshold': 250,
+        #'shard': [0,1]
         }
     })
-    ws = create_connection(gateWay)
-    ws.send(handshakePayload)
-    readyPayload = json.loads(ws.recv())
 
-    # Start heartbeat
-    heartbeatThread = Heartbeat(ws, readyPayload['d']['heartbeat_interval']/1000)
-    heartbeatThread.start()
+    print(ws.send(handshakePayload))
 
-    # trollPingThread = TrollPing()
-    # trollPingThread.start()
 
+def on_message(ws, recv_raw):
     # Start receiving messages from gateway
-    while True:
-        recv_raw = ws.recv()
-        if recv_raw != '':
-            receive = json.loads(recv_raw)
-            heartbeatThread.last_seq = receive['s']  # Update hearbeat sequence number
+    if ws.once:
+	print(recv_raw)
+        ws.once = False
+        readyPayload = json.loads(recv_raw)
+        #print(json.dumps(readyPayload, indent=2))
+        ws.heartbeatThread = Heartbeat(ws, readyPayload['d']['heartbeat_interval']/1000)
+        ws.heartbeatThread.start()
+    if recv_raw != '':
+        receive = json.loads(recv_raw)
+        ws.heartbeatThread.last_seq = receive['s']  # Update hearbeat sequence number
+        
+        print(json.dumps(receive, indent=2))
+
+        if receive['t'] == 'MESSAGE_CREATE':
+            content = receive['d']['content']
+            channelID = receive['d']['channel_id']
+            messageID = receive['d']['id']
+            contentSplit = content.split(" ")
+
+           # Jonisgay 
+            if contentSplit[0] == "!jonisgay":  
+                print(sendMessage("Jon is g\u00C6y af!", channelID))
             
-            print(json.dumps(receive, indent=2))
+            # Amirite
+            elif contentSplit[-1] == "amirite?" and len(contentSplit) > 1:
+                if contentSplit[-2][-1] == ',':
+                    contentSplit[-2] = contentSplit[-2][:-1]  # Strip the comma.
+                print(sendMessage("Yeah, {}!".format(" ".join(contentSplit[:-1])), channelID))
 
-            if receive['t'] == 'MESSAGE_CREATE':
-                content = receive['d']['content']
-                channelID = receive['d']['channel_id']
-                messageID = receive['d']['id']
-                contentSplit = content.split(" ")
+            # Karmabot. Activates if first word contains ++ or --
+            elif contentSplit[0][-2:] == "++":
+                karma.increment(contentSplit[0][:-2])
+                karma.dump()
+            elif contentSplit[0][-2:] == "--":
+                karma.decrement(contentSplit[0][:-2])
+                karma.dump()
+            elif contentSplit[0] == "!karma"  and len(contentSplit) == 2:
+                sendMessage("{}: {}".format(contentSplit[1], karma.read(contentSplit[1])), channelID)
 
-               # Jonisgay 
-                if contentSplit[0] == "!jonisgay":  
-                    print(sendMessage("Jon is g\u00C6y af!", channelID))
+            # Word reactions.
+            elif contentSplit[0] == "!react" and len(contentSplit) > 1:
                 
-                # Amirite
-                elif contentSplit[-1] == "amirite?" and len(contentSplit) > 1:
-                    if contentSplit[-2][-1] == ',':
-                        contentSplit[-2] = contentSplit[-2][:-1]  # Strip the comma.
-                    print(sendMessage("Yeah, {}!".format(" ".join(contentSplit[:-1])), channelID))
+                reactMessage = contentSplit[1]
+                for i in range(2, len(contentSplit)):
+                    reactMessage += " " + contentSplit[i]
+                prevMessageJson = json.loads(getPreviousMessage(channelID, messageID))[0]
+                prevMessageID = prevMessageJson['id']
 
-                # Karmabot. Activates if first word contains ++ or --
-                elif contentSplit[0][-2:] == "++":
-                    karma.increment(contentSplit[0][:-2])
-                    karma.dump()
-                elif contentSplit[0][-2:] == "--":
-                    karma.decrement(contentSplit[0][:-2])
-                    karma.dump()
-                elif contentSplit[0] == "!karma"  and len(contentSplit) == 2:
-                    sendMessage("{}: {}".format(contentSplit[1], karma.read(contentSplit[1])), channelID)
+                deleteMessage(channelID, messageID)
 
-                # Word reactions.
-                elif contentSplit[0] == "!react" and len(contentSplit) > 1:
-                    
-                    reactMessage = contentSplit[1]
-                    for i in range(2, len(contentSplit)):
-                        reactMessage += " " + contentSplit[i]
-                    prevMessageJson = json.loads(getPreviousMessage(channelID, messageID))[0]
-                    prevMessageID = prevMessageJson['id']
+                spaceCounter = 0
+                for char in reactMessage:
+                    if char in emojitable.table:
+                        print(char)
+                        if char == ' ':
+                            emoji = emojitable.table[char][spaceCounter]
+                            spaceCounter += 1 if spaceCounter < 3 else 0
+                        else:
+                            emoji = emojitable.table[char]
+                        print(addReaction(emoji, channelID, prevMessageID))
+                        time.sleep(0.3)
 
-                    deleteMessage(channelID, messageID)
 
-                    spaceCounter = 0
-                    for char in reactMessage:
-                        if char in emojitable.table:
-                            print(char)
-                            if char == ' ':
-                                emoji = emojitable.table[char][spaceCounter]
-                                spaceCounter += 1 if spaceCounter < 3 else 0
-                            else:
-                                emoji = emojitable.table[char]
-                            print(addReaction(emoji, channelID, prevMessageID))
-                            time.sleep(0.3)
+if __name__ == "__main__":
+    
+    websocket.enableTrace(True)
+    # Handshake
+    gateWay = "wss://gateway.discord.gg/"
+    ws = websocket.WebSocketApp(gateWay,
+                                on_message=on_message,
+                                on_open=on_open
+                                )
+    ws.once = True
+    ws.run_forever()
