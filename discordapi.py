@@ -21,7 +21,7 @@ class Heartbeat(threading.Thread):
             self.payload["d"] = self.last_seq
             self.ws.send(json.dumps(self.payload))
             print("Sending Heartbeat...")
-            print(self.payload)
+            print(json.dumps(self.payload))
             time.sleep(self.interval)
 
         

@@ -12,40 +12,33 @@ import time
 
 
 def on_open(ws):
-    handshakePayload = json.dumps({
-        'op': 2,
-        'd': {
-        'token': token,
-        'properties': {
-	    '$os': 'linux',
-	    '$browser': '',
-	    '$device': '',
-	    '$referrer': '',
-	    '$referring_domain': ''
-        },
-        'compress': False,
-        'large_threshold': 250,
-        #'shard': [0,1]
-        }
-    })
-
-    print(ws.send(handshakePayload))
+    pass
 
 
 def on_message(ws, recv_raw):
     # Start receiving messages from gateway
-    if ws.once:
-	print(recv_raw)
-        ws.once = False
-        readyPayload = json.loads(recv_raw)
-        #print(json.dumps(readyPayload, indent=2))
-        ws.heartbeatThread = Heartbeat(ws, readyPayload['d']['heartbeat_interval']/1000)
+    receive = json.loads(recv_raw)
+    print(json.dumps(receive, indent=2))
+    if receive["op"] == 10:
+        ws.heartbeatThread = Heartbeat(ws, receive['d']['heartbeat_interval']/1000)
         ws.heartbeatThread.start()
-    if recv_raw != '':
-        receive = json.loads(recv_raw)
+
+        handshakePayload = json.dumps({
+            'op': 2,
+            'd': {
+            'token': token,
+            'properties': {
+            },
+            'compress': False,
+            'large_threshold': 250,
+            }
+        })
+
+        ws.send(handshakePayload)
+        
+    if receive["op"] == 0:
         ws.heartbeatThread.last_seq = receive['s']  # Update hearbeat sequence number
         
-        print(json.dumps(receive, indent=2))
 
         if receive['t'] == 'MESSAGE_CREATE':
             content = receive['d']['content']
@@ -101,10 +94,9 @@ if __name__ == "__main__":
     
     websocket.enableTrace(True)
     # Handshake
-    gateWay = "wss://gateway.discord.gg/"
+    gateWay = "wss://gateway.discord.gg/?encoding=json&v=6"
     ws = websocket.WebSocketApp(gateWay,
                                 on_message=on_message,
                                 on_open=on_open
                                 )
-    ws.once = True
     ws.run_forever()

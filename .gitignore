@@ -114,3 +114,8 @@ pip-selfcheck.json
 
 .cfg
 *.cfg
+
+.swp
+*.swp
+.swo
+*.swo
