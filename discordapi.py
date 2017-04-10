@@ -25,7 +25,7 @@ class Heartbeat(threading.Thread):
             time.sleep(self.interval)
 
         
-def sendMessage(content, channelID):
+def sendMessage(content, channelID, embed=None):
     """
     Sends a message to the specified channel
 
@@ -36,10 +36,53 @@ def sendMessage(content, channelID):
     """
     
     url = apiBase + "/channels/" + channelID + "/messages"
-    header = {"Authorization" : token}
-    data = {"content" : content}
-    r = requests.post(url, headers=header, data=data)
+    header = {"Content-Type": "application/json", "Authorization" : token}
+    data = {"content" : content, "embed" : embed}
+    print(data)
+    r = requests.post(url, headers=header, data=json.dumps(data))
     return r.text
+
+
+def changeUser(username=None, avatar=None):
+    """
+
+    """
+    url = apiBase + "/users/@me"
+    header = {"Content-Type": "application/json", "Authorization" : token}
+    data = {"username": username, "avatar": avatar }
+    print(data)
+    r = requests.patch(url, headers=header, data=json.dumps(data))
+    return r.text
+
+
+def changeNick(nickname, guildID):
+    url = apiBase + "/guilds/" + str(guildID) + "/members/@me/nick"
+    header = {"Content-Type": "application/json", "Authorization" : token}
+    data = {"nick": nickname}
+    print(data)
+    r = requests.patch(url, headers=header, data=json.dumps(data))
+    return r.text
+
+
+def getNick(guildID, userID):
+    url = apiBase + "/guilds/" + str(guildID) + "/members/"  + str(userID)
+    header = {"Content-Type": "application/json", "Authorization" : token}
+    r = requests.get(url, headers=header)
+    return json.loads(r.text)['nick']
+
+
+def getGuildID(channelID):
+    url = apiBase + "/channels/" + channelID
+    header = {"Content-Type": "application/json", "Authorization" : token}
+    r = requests.get(url, headers=header)
+    print(r.text)
+    return json.loads(r.text)['guild_id']
+
+
+"""def createEmbedObject(title=None, type=None, description=None, url=None, timestamp=None, color=None,
+                      footer=None, image=None, thumbnail=None, video=None, provider=None, 
+                      fields=None):"""
+    
 
 def getPreviousMessage(channelID, messageID):
     """
