@@ -1,12 +1,17 @@
+#!usr/bin/env python
+
 import requests
 import json
-from globvar import *
 import websocket
 from discordapi import *
+from channelapi import *
+from userapi import *
+from guildapi import *
 import random
 import karmabot
 import emojitable
 import time
+from globvar import *
 
 """ Before you begin, create a file named 'token.cfg' and put your bot token in it. Just the bot token."""
 
@@ -62,6 +67,18 @@ def on_message(ws, recv_raw):
                 print(getNick(guildID, userID))
 
 
+            # Vote
+            if contentSplit[0] == "!vote":
+                pass
+
+            # Timer
+            if contentSplit[0] in ["!time", "!timer"]:
+                if len(contentSplit) == 2:
+                    Timer(int(contentSplit[1]), 100, channelID).start()
+                if len(contentSplit) == 3:
+                    Timer(int(contentSplit[1]), int(contentSplit[2]), channelID).start()
+
+
             # Trollping
             if contentSplit[0] in ["!trollping", "!tp", "!troll"]:
                 changeUser(avatar=avatarBase64)
@@ -106,15 +123,8 @@ def on_message(ws, recv_raw):
 
                 spaceCounter = 0
                 for char in reactMessage:
-                    if char in emojitable.table:
-                        print(char)
-                        if char == ' ':
-                            emoji = emojitable.table[char][spaceCounter]
-                            spaceCounter += 1 if spaceCounter < 3 else 0
-                        else:
-                            emoji = emojitable.table[char]
-                        print(addReaction(emoji, channelID, prevMessageID))
-                        time.sleep(0.3)
+                    print(addReaction(charToEmoji(char), channelID, prevMessageID))
+                    time.sleep(0.3)
 
 
 if __name__ == "__main__":

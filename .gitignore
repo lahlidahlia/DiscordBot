@@ -112,6 +112,7 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 
+# Misc
 .cfg
 *.cfg
 
@@ -119,3 +120,6 @@ pip-selfcheck.json
 *.swp
 .swo
 *.swo
+
+.log
+*.log

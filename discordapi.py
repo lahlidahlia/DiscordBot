@@ -3,6 +3,10 @@ import json
 import time
 import requests
 from globvar import *
+from channelapi import *
+from guildapi import *
+from userapi import *
+import emojitable
 
 
 class Heartbeat(threading.Thread):
@@ -24,169 +28,55 @@ class Heartbeat(threading.Thread):
             print(json.dumps(self.payload))
             time.sleep(self.interval)
 
+
+class Timer(threading.Thread):
+    def __init__(self, duration, length, channelID):
+        super(Timer, self).__init__()
+        self.duration = duration
+        self.channelID = channelID
+        self.length = length 
         
-def sendMessage(content, channelID, embed=None):
-    """
-    Sends a message to the specified channel
-
-    uses globvar: apiBase, token
-    content: string
-    token: string
-    channelID: string
-    """
-    
-    url = apiBase + "/channels/" + channelID + "/messages"
-    header = {"Content-Type": "application/json", "Authorization" : token}
-    data = {"content" : content, "embed" : embed}
-    print(data)
-    r = requests.post(url, headers=header, data=json.dumps(data))
-    return r.text
-
-
-def changeUser(username=None, avatar=None):
-    """
-
-    """
-    url = apiBase + "/users/@me"
-    header = {"Content-Type": "application/json", "Authorization" : token}
-    data = {"username": username, "avatar": avatar }
-    print(data)
-    r = requests.patch(url, headers=header, data=json.dumps(data))
-    return r.text
-
-
-def changeNick(nickname, guildID):
-    url = apiBase + "/guilds/" + str(guildID) + "/members/@me/nick"
-    header = {"Content-Type": "application/json", "Authorization" : token}
-    data = {"nick": nickname}
-    print(data)
-    r = requests.patch(url, headers=header, data=json.dumps(data))
-    return r.text
+    def run(self):
+        if self.duration < 1:
+            return
+        counter = 1
+        message = "```diff\n-  0 |" + " "*self.length + "| " + str(self.duration) + "\n```"
+        # Send message
+        messageID = json.loads(sendMessage(message, self.channelID))["id"]
+        while counter <= self.duration:
+            time.sleep(1)
+            # Coloring
+            if counter <= float(self.duration)/3:
+                message = "```diff\n-"
+            elif counter <= float(self.duration)*2/3:
+                message = "```fix\n "
+            else: 
+                message = "```diff\n+"
+            # Countup counter
+            message += "  " + str(counter) + " |"
+            # Progress bar calculation
+            progress = int(round(((float(counter)/self.duration*self.length))))
+            message += "-"*progress + " "*(self.length-progress) + "| " + str(self.duration) + "\n```"
+            response = json.loads(editMessage(message, self.channelID, messageID))
+            if "code" in response and response["code"] == 10008:
+                return
+            counter += 1
+        addReaction(u"\U000023F0", self.channelID, messageID)
+        #for char in "done!":
+            #addReaction(charToEmoji(char), self.channelID, messageID)
+            #time.sleep(0.5)
 
 
-def getNick(guildID, userID):
-    url = apiBase + "/guilds/" + str(guildID) + "/members/"  + str(userID)
-    header = {"Content-Type": "application/json", "Authorization" : token}
-    r = requests.get(url, headers=header)
-    return json.loads(r.text)['nick']
+def charToEmoji(char):
+    if char in emojitable.table:
+        print(char)
+        if char == ' ':
+            emoji = emojitable.table[char][spaceCounter]
+            spaceCounter += 1 if spaceCounter < 3 else 0
+        else:
+            emoji = emojitable.table[char]
+    return emoji
 
-
-def getGuildID(channelID):
-    url = apiBase + "/channels/" + channelID
-    header = {"Content-Type": "application/json", "Authorization" : token}
-    r = requests.get(url, headers=header)
-    print(r.text)
-    return json.loads(r.text)['guild_id']
-
-
-"""def createEmbedObject(title=None, type=None, description=None, url=None, timestamp=None, color=None,
-                      footer=None, image=None, thumbnail=None, video=None, provider=None, 
-                      fields=None):"""
-    
-
-def getPreviousMessage(channelID, messageID):
-    """
-    Get the most recent message sent in a channel.
-
-    uses globvar: apiBase, token
-    content: string
-    token: string
-    channelID: string
-    messageID: string
-    """
-    
-    url = apiBase + "/channels/" + channelID + "/messages"
-    header = {"Authorization" : token}
-    param = {"before" : messageID, "limit" : 1}
-    r = requests.get(url, headers=header, params=param)
-    return r.text
-
-def addReaction(reaction, channelID, messageID):
-    """
-    PUT/channels/{channel.id}/messages/{message.id}/reactions/{emoji}/@me
-
-    Add one reaction to a message.
-    reaction: emoji string.
-    """
-    url = apiBase + "/channels/" + channelID + "/messages/" + messageID + "/reactions/" + reaction + "/@me" # %F0%9F%91%8C%F0%9F%8F%BD
-    header = {"Authorization" : token}
-    r = requests.put(url, headers=header)
-    return r.text
-    
-
-def changeUsername(content, channelID):
-    """
-    Sends a message to the specified channel
-
-    uses globvar: apiBase, token
-    content: string
-    token: string
-    channelID: string
-    """
-    
-    url = apiBase + "/channels/" + channelID + "/messages"
-    header = {"Authorization" : token}
-    data = {"content" : content}
-    r = requests.post(url, headers=header, data=data)
-    return r.text
-
-def deleteMessage(channelID, messageID):
-    """
-    Sends a message to the specified channel
-
-    uses globvar: apiBase, token
-    content: string
-    token: string
-    channelID: string
-    """
-    
-    url = apiBase + "/channels/" + channelID + "/messages/" + messageID
-    header = {"Authorization" : token}
-    r = requests.delete(url, headers=header)
-    return r.text
-
-def getMemberList(guildID):
-    """
-    Get the list of guild members
-    
-    uses globvar: apiBase, token
-    guildID: string
-    """
-    url = apiBase + "/guilds/" + guildID + "/members"
-    headers = {"Authorization" : token}
-    r = requests.get(url, headers=headers, params={"limit" : 50})
-    return r.text
-    
-
-def getMessageJson(channelID):
-    """
-    Get all the messages from the specified channelID in a json
-
-    uses globvar: apiBase, token
-    channelID: string
-    username: string - optional - Used to find message only from that user. Username is case sensitive.
-
-    Returns a list of message informations
-    """
-    url = apiBase + "/channels/" + channelID + "/messages"
-    header = {"Authorization" : token}
-    
-    messageList = []
-    before = None  # Parameter used to get messages beyond the limit.
-    counter = 0
-    while True:
-        counter += 1
-        params = {"limit" : 100, "before" : before}
-        r = requests.get(url, headers=header, params=params)
-        if r.status_code == 429:
-            print(r.text)
-            print("ERROR ERROR ERROR ERROR ERROR ERROR")
-            return "ERROR"
-        receiveList = json.loads(r.text)
-        if len(receiveList) == 0 or counter == 10:  # If we ran out of messages.
-            return messageList
-        messageList += receiveList
-        before = receiveList[len(receiveList)-1]['id']
 
 def parseMessageJson(messageList, username=None):
     """
