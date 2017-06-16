@@ -123,7 +123,9 @@ def on_message(ws, recv_raw):
 
                 spaceCounter = 0
                 for char in reactMessage:
-                    print(addReaction(charToEmoji(char), channelID, prevMessageID))
+                    print(addReaction(charToEmoji(char, spaceCounter), channelID, prevMessageID))
+                    if char == ' ':
+                        spaceCounter += 1 if spaceCounter < 3 else 0
                     time.sleep(0.3)
 
 

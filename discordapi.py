@@ -67,12 +67,15 @@ class Timer(threading.Thread):
             #time.sleep(0.5)
 
 
-def charToEmoji(char):
+def charToEmoji(char, spaceCounter=0):
+    """ 
+    If you insert a space, make sure you have your own
+    space counter and increment it. Space counter goes from 0 to 3.
+    """
     if char in emojitable.table:
         print(char)
         if char == ' ':
             emoji = emojitable.table[char][spaceCounter]
-            spaceCounter += 1 if spaceCounter < 3 else 0
         else:
             emoji = emojitable.table[char]
     return emoji
